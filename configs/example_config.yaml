@@ -1,0 +1,53 @@
+# MetaMAVS example configuration (Phase 1, dry-run prototype).
+project:
+  name: MetaMAVS
+  run_name: example_run
+  output_dir: reports/example_run
+
+input:
+  manifest: data/example_manifest.csv
+  sequencing_type: paired_end
+
+execution:
+  dry_run: true
+  mode: local
+  threads: 8
+
+tools:
+  qc:
+    fastqc: true
+    fastp: true
+    multiqc: true
+  host_removal:
+    tool: bowtie2
+    host_reference: /path/to/host/reference
+  viral_detection:
+    tools:
+      - kraken2
+      - diamond
+    kraken2_db: /path/to/kraken2/viral_db
+    diamond_db: /path/to/rvdb.dmnd
+  assembly:
+    enabled: true
+    assembler: megahit
+  novel_virus_screening:
+    enabled: true
+    tools:
+      - virsorter2
+      - checkv
+
+risk:
+  high_risk_pathogens:
+    - SARS-CoV-2
+    - Influenza A virus
+    - Influenza B virus
+    - Norovirus
+    - Enterovirus
+  review_on_high_risk: true
+  review_on_novel_candidates: true
+  review_on_qc_failure: true
+
+report:
+  formats:
+    - markdown
+    - html

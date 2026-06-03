@@ -19,7 +19,28 @@
       "Bash(grep -v -E '^\\\\.$|^\\\\.\\\\.$|^\\\\.claude$|^\\\\.git$')",
       "Bash(git checkout *)",
       "Bash(git commit -q -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python3 -c \"import langgraph, sys; print\\('langgraph', langgraph.__version__\\)\")",
+      "Bash(python3 -c \"import pydantic; print\\('pydantic', pydantic.__version__\\)\")",
+      "Bash(python3 -c \"import pandas; print\\('pandas', pandas.__version__\\)\")",
+      "Bash(python3 -c \"import yaml; print\\('pyyaml ok'\\)\")",
+      "Bash(python3 -c \"import typer; print\\('typer ok'\\)\")",
+      "Bash(python3 -c \"from langgraph.graph import StateGraph, START, END; print\\('graph ok'\\)\")",
+      "Bash(python3 -c \"from langgraph.checkpoint.memory import MemorySaver; print\\('MemorySaver ok'\\)\")",
+      "Bash(python3 -c \"import langgraph.version as v; print\\(getattr\\(v,'__version__','?'\\)\\)\")",
+      "Bash(pip show *)",
+      "Bash(python -m pytest -q)",
+      "Bash(python -m pytest)",
+      "Bash(python -m metamavs.cli graph --config configs/example_config.yaml)",
+      "Bash(python -m metamavs.cli run --config configs/example_config.yaml --dry-run)",
+      "Bash(sed -n '1,60p' reports/example_run/report.md)",
+      "Bash(python -m metamavs.cli validate --config configs/example_config.yaml)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('reports/example_run/intermediate/qc_summary.json'\\)\\); [print\\(r['sample_id'], 'Q='+str\\(r['mean_quality']\\), 'reads='+str\\(r['total_reads']\\), r['qc_status']\\) for r in d['per_sample']]\")",
+      "Read(//home/sihua/.claude/**)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('/home/sihua/.claude/settings.json'\\)\\);[print\\(' -',k,'=',v\\) for k,v in d.get\\('enabledPlugins',{}\\).items\\(\\)]\")",
+      "Bash(curl -fsSL https://bun.sh/install)",
+      "Bash(bash)"
     ]
   }
 }

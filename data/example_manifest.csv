@@ -1,0 +1,5 @@
+sample_id,read1,read2,collection_date,location,sample_type
+sample_001,data/sample_001_R1.fastq.gz,data/sample_001_R2.fastq.gz,2026-01-01,site_A,wastewater
+sample_002,data/sample_002_R1.fastq.gz,data/sample_002_R2.fastq.gz,2026-01-08,site_A,wastewater
+sample_003,data/sample_003_R1.fastq.gz,data/sample_003_R2.fastq.gz,2026-01-15,site_B,wastewater
+sample_004,data/sample_004_R1.fastq.gz,data/sample_004_R2.fastq.gz,2026-01-22,site_B,wastewater

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>MetaMAVS — run_20260603_154040</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#1a1a1a;line-height:1.5}
+h1,h2,h3{color:#0b3d66}
+table{border-collapse:collapse;width:100%;margin:1rem 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}
+th{background:#f0f4f8}
+code{background:#f3f3f3;padding:1px 4px;border-radius:3px}
+hr{border:none;border-top:1px solid #ddd;margin:1.5rem 0}
+</style>
+</head>
+<body>
+<h1>MetaMAVS Surveillance Report: example_run</h1>
+<p>&gt; _Research-grade metagenomic virus surveillance. Signals below are <strong>detected sequence signals</strong>, not confirmed infections. Confirmatory testing is required before any public-health action._</p>
+<h2>1. Project Summary</h2>
+<ul>
+<li><strong>Project:</strong> MetaMAVS</li>
+<li><strong>Run name:</strong> example_run</li>
+<li><strong>Run id:</strong> run_20260603_154040</li>
+<li><strong>Mode:</strong> dry-run</li>
+<li><strong>Overall risk:</strong> High</li>
+</ul>
+<h2>2. Sample Summary</h2>
+<ul>
+<li><strong>Number of samples:</strong> 4</li>
+<li><strong>Sequencing type:</strong> paired_end</li>
+<li><strong>Locations:</strong> site_A, site_B</li>
+<li><strong>Collection dates:</strong> 2026-01-01, 2026-01-08, 2026-01-15, 2026-01-22</li>
+</ul>
+<h2>3. Quality Control</h2>
+<ul>
+<li><strong>Passed:</strong> 3</li>
+<li><strong>Failed:</strong> 1</li>
+</ul>
+<table><thead><tr>
+<th>Sample</th>
+<th>Mean Q</th>
+<th>Total reads</th>
+<th>Adapter %</th>
+<th>QC</th>
+</tr></thead><tbody>
+<tr><td>sample_001</td><td>36.0</td><td>1500000</td><td>2.0</td><td>pass</td></tr>
+<tr><td>sample_002</td><td>30.0</td><td>1750000</td><td>3.5</td><td>pass</td></tr>
+<tr><td>sample_003</td><td>24.0</td><td>2000000</td><td>5.0</td><td>fail</td></tr>
+<tr><td>sample_004</td><td>36.0</td><td>2250000</td><td>2.0</td><td>pass</td></tr>
+</tbody></table>
+<h2>4. Host Read Removal</h2>
+<ul>
+<li><strong>Tool:</strong> bowtie2</li>
+<li><strong>Host reference:</strong> /path/to/host/reference</li>
+</ul>
+<table><thead><tr>
+<th>Sample</th>
+<th>Host read %</th>
+<th>Non-host reads</th>
+</tr></thead><tbody>
+<tr><td>sample_001</td><td>85.0</td><td>300000</td></tr>
+<tr><td>sample_002</td><td>78.0</td><td>439999</td></tr>
+<tr><td>sample_003</td><td>71.0</td><td>580000</td></tr>
+<tr><td>sample_004</td><td>64.0</td><td>720000</td></tr>
+</tbody></table>
+<h2>5. Viral Detection &amp; Taxonomy</h2>
+<ul>
+<li><strong>Detection tools:</strong> kraken2, diamond</li>
+<li><strong>Candidate taxa:</strong> 7</li>
+<li><strong>Flagged (phage/FP/low-conf):</strong> 3</li>
+<li><strong>Phage taxa:</strong> 2</li>
+<li><strong>Pathogen-like taxa:</strong> 4</li>
+</ul>
+<h2>6. Abundance Trends</h2>
+<table><thead><tr>
+<th>Taxon</th>
+<th>Mean RPM</th>
+<th>First RPM</th>
+<th>Last RPM</th>
+<th>% change</th>
+<th>Trend</th>
+</tr></thead><tbody>
+<tr><td>SARS-CoV-2</td><td>905.6</td><td>1000.0</td><td>826.67</td><td>-17.3</td><td>stable</td></tr>
+<tr><td>Influenza A virus</td><td>480.0</td><td>480.0</td><td>480.0</td><td>0.0</td><td>stable</td></tr>
+<tr><td>Norovirus</td><td>327.22</td><td>293.33</td><td>355.56</td><td>21.2</td><td>stable</td></tr>
+<tr><td>Escherichia phage T4</td><td>242.65</td><td>190.0</td><td>286.67</td><td>50.9</td><td>increasing</td></tr>
+<tr><td>uncultured crAssphage</td><td>185.36</td><td>120.0</td><td>240.0</td><td>100.0</td><td>increasing</td></tr>
+</tbody></table>
+<p><strong>Sharp increases:</strong> uncultured crAssphage, unclassified divergent RNA virus, low-complexity viral fragment</p>
+<h2>7. Novel / Divergent Virus Candidates</h2>
+<table><thead><tr>
+<th>Candidate</th>
+<th>Putative taxon</th>
+<th>Reads</th>
+<th>Confidence</th>
+<th>Evidence</th>
+</tr></thead><tbody>
+<tr><td>NVC_001</td><td>unclassified divergent RNA virus</td><td>1024</td><td>0.42</td><td>unclassified + divergent (low classification confidence)</td></tr>
+</tbody></table>
+<h2>8. Epidemiological Risk Assessment</h2>
+<ul>
+<li><strong>Overall risk:</strong> High</li>
+</ul>
+<table><thead><tr>
+<th>Taxon</th>
+<th>Risk</th>
+<th>Reads</th>
+<th>Trend</th>
+<th>Reasons</th>
+</tr></thead><tbody>
+<tr><td>SARS-CoV-2</td><td>High</td><td>6720</td><td>stable</td><td>matches configured high-risk pathogen list</td></tr>
+<tr><td>Influenza A virus</td><td>High</td><td>3600</td><td>stable</td><td>matches configured high-risk pathogen list</td></tr>
+<tr><td>Norovirus</td><td>High</td><td>2480</td><td>stable</td><td>matches configured high-risk pathogen list</td></tr>
+<tr><td>unclassified divergent RNA virus</td><td>Medium</td><td>1024</td><td>increasing</td><td>substantial read support for a non-phage virus; abundance trend increasing</td></tr>
+<tr><td>unclassified divergent RNA virus</td><td>Medium</td><td>1024</td><td>unknown</td><td>novel/divergent candidate; requires confirmatory characterisation</td></tr>
+</tbody></table>
+<h2>9. Human Review</h2>
+<ul>
+<li><strong>Review required:</strong> True</li>
+<li><strong>Decision:</strong> approved_simulated</li>
+<li><strong>Approved for report:</strong> True</li>
+<li><strong>Reviewer notes:</strong> Auto-approved in dry-run/non-interactive mode. Triggers: overall risk = High; 1 novel candidate(s); QC failure: sample_003.</li>
+</ul>
+<h2>10. Recommended Follow-up Actions</h2>
+<ul>
+<li>Confirm SARS-CoV-2 (High) with targeted RT-qPCR / amplicon sequencing</li>
+<li>Confirm Influenza A virus (High) with targeted RT-qPCR / amplicon sequencing</li>
+<li>Confirm Norovirus (High) with targeted RT-qPCR / amplicon sequencing</li>
+<li>Manually curate novel/divergent candidates; verify contigs with CheckV and phylogenetics</li>
+</ul>
+<h2>11. Warnings</h2>
+<ul>
+<li>Sample &#x27;sample_001&#x27;: read1 file not found (allowed in dry-run): data/sample_001_R1.fastq.gz</li>
+<li>Sample &#x27;sample_001&#x27;: read2 file not found (allowed in dry-run): data/sample_001_R2.fastq.gz</li>
+<li>Sample &#x27;sample_002&#x27;: read1 file not found (allowed in dry-run): data/sample_002_R1.fastq.gz</li>
+<li>Sample &#x27;sample_002&#x27;: read2 file not found (allowed in dry-run): data/sample_002_R2.fastq.gz</li>
+<li>Sample &#x27;sample_003&#x27;: read1 file not found (allowed in dry-run): data/sample_003_R1.fastq.gz</li>
+<li>Sample &#x27;sample_003&#x27;: read2 file not found (allowed in dry-run): data/sample_003_R2.fastq.gz</li>
+<li>Sample &#x27;sample_004&#x27;: read1 file not found (allowed in dry-run): data/sample_004_R1.fastq.gz</li>
+<li>Sample &#x27;sample_004&#x27;: read2 file not found (allowed in dry-run): data/sample_004_R2.fastq.gz</li>
+<li>1 sample(s) failed QC thresholds</li>
+<li>3 taxon(a) flagged as likely false positives / phage / low-confidence</li>
+<li>Sharp abundance increase (&gt;=100%) for: uncultured crAssphage, unclassified divergent RNA virus, low-complexity viral fragment</li>
+<li>1 novel/divergent viral candidate(s) require expert review</li>
+</ul>
+<h2>12. Reproducibility</h2>
+<ul>
+<li><strong>MetaMAVS version:</strong> 0.1.0</li>
+<li><strong>Config:</strong> configs/example_config.yaml</li>
+<li><strong>Run directory:</strong> reports/example_run</li>
+<li><strong>Generated (UTC):</strong> 2026-06-03T15:40:40Z</li>
+</ul>
+<hr/>
+<p>_Generated by MetaMAVS. Detected signals require confirmatory testing._</p>
+</body>
+</html>
