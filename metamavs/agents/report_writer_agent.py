@@ -140,6 +140,13 @@ def _build_markdown(state: MetaMAVSState) -> str:
                  for r in risk["top_risks"]],
             )
         )
+    controls = risk.get("controls", [])
+    if controls:
+        parts.append(
+            "\n**Normalization controls (not ranked as threats):** "
+            + "; ".join(f"{c['taxon_name']} ({c['total_reads']} reads — {c.get('role','control')})" for c in controls)
+            + "\n"
+        )
 
     # LLM interpretation (Phase 4, optional; unnumbered so section numbers are stable)
     llm = state.get("llm_narrative", {}) or {}

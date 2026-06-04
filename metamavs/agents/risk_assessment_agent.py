@@ -118,7 +118,16 @@ def risk_assessment_agent_node(state: MetaMAVSState) -> dict[str, Any]:
         tdf = read_csv_safe(trend_path)
         trend = {r["taxon_name"]: r["trend"] for _, r in tdf.iterrows()}
 
-    tax_rows = read_csv_safe(tax_path).to_dict(orient="records") if (tax_path and Path(tax_path).exists()) else []
+    all_rows = read_csv_safe(tax_path).to_dict(orient="records") if (tax_path and Path(tax_path).exists()) else []
+
+    # Separate normalization controls (e.g. PMMoV) — reported as context, NOT
+    # ranked as threats and not sent to the risk LLM.
+    controls = [
+        {"taxon_name": str(r["taxon_name"]), "total_reads": int(r.get("total_reads", 0) or 0),
+         "role": str(r.get("control_label", "") or "control marker")}
+        for r in all_rows if bool(r.get("is_control", False))
+    ]
+    tax_rows = [r for r in all_rows if not bool(r.get("is_control", False))]
 
     # Build evidence and ask the LLM agent (optional) to assess risk.
     evidence = [
@@ -186,6 +195,7 @@ def risk_assessment_agent_node(state: MetaMAVSState) -> dict[str, Any]:
         "counts": counts,
         "top_risks": risk_rows[:5],
         "n_novel_candidates": int(novel.get("n_candidates", 0)),
+        "controls": controls,
         "mode": mode,
     }
     write_json(run_dir / "intermediate" / "risk_summary.json", risk_summary)

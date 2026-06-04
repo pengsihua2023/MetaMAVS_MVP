@@ -7,6 +7,7 @@ from typing import Any
 
 import pandas as pd
 
+from ..controls import match_control
 from ..llm import generate_json, llm_available
 from ..llm.prompts import TAXONOMY_SYSTEM, build_taxonomy_user
 from ..state import MetaMAVSState
@@ -78,6 +79,7 @@ def taxonomy_classification_agent_node(state: MetaMAVSState) -> dict[str, Any]:
         # Derive a coarse rank from available evidence.
         rank = "species" if taxid > 0 else "unclassified"
         phage = is_phage(taxon)
+        control = match_control(taxon, taxid)  # PMMoV etc. -> normalization control
         flagged, reasons = flag_false_positive(
             {"taxon_name": taxon, "reads": reads, "confidence": conf}
         )
@@ -102,6 +104,8 @@ def taxonomy_classification_agent_node(state: MetaMAVSState) -> dict[str, Any]:
             "total_reads": reads,
             "confidence": conf,
             "is_phage": phage,
+            "is_control": bool(control),
+            "control_label": control or "",
             "false_positive_flag": flagged,
             "flag_reasons": ";".join(reasons),
             "llm_rationale": llm_rationale,
@@ -114,11 +118,15 @@ def taxonomy_classification_agent_node(state: MetaMAVSState) -> dict[str, Any]:
     fp_path = write_csv(run_dir / "tables" / "false_positive_flags.csv", fp_flags)
 
     n_phage = sum(1 for r in cleaned if r["is_phage"])
-    n_pathogen_like = sum(1 for r in cleaned if not r["is_phage"] and not r["false_positive_flag"])
+    n_control = sum(1 for r in cleaned if r["is_control"])
+    n_pathogen_like = sum(
+        1 for r in cleaned if not r["is_phage"] and not r["is_control"] and not r["false_positive_flag"]
+    )
     summary = {
         "n_taxa": len(cleaned),
         "n_flagged": len(fp_flags),
         "n_phage": n_phage,
+        "n_control": n_control,
         "n_pathogen_like": n_pathogen_like,
         "families": sorted({r["family"] for r in cleaned}),
         "mode": mode,
