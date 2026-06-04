@@ -35,3 +35,7 @@ slide-*.jpg
 # Stray tool-output files dropped at repo root (comparisons, scratch)
 /*.tsv
 /*.full.tsv
+
+# Secrets (LLM API keys) — never commit
+.env
+.env.local
