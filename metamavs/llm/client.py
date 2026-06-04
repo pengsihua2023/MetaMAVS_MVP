@@ -24,7 +24,9 @@ def _load_env() -> None:
     try:
         from dotenv import load_dotenv
 
-        load_dotenv()  # finds .env in the cwd / parents
+        # override=True so a project .env key takes precedence over any key
+        # already exported in the shell environment.
+        load_dotenv(override=True)
     except Exception:
         pass  # dotenv optional; env var may already be set
 
