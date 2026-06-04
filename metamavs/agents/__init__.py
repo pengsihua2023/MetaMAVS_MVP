@@ -11,6 +11,7 @@ from .final_summary import final_summary_node
 from .host_removal_agent import host_removal_agent_node
 from .human_review import human_review_node
 from .input_manager import input_manager_node
+from .llm_interpretation_agent import llm_interpretation_agent_node
 from .novel_virus_agent import novel_virus_screening_agent_node
 from .qc_agent import qc_agent_node
 from .remote_execution_agent import remote_execution_agent_node
@@ -37,4 +38,5 @@ __all__ = [
     "remote_execution_agent_node",
     "result_sync_agent_node",
     "tool_output_parser_agent_node",
+    "llm_interpretation_agent_node",
 ]

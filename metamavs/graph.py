@@ -20,6 +20,7 @@ from .agents import (
     host_removal_agent_node,
     human_review_node,
     input_manager_node,
+    llm_interpretation_agent_node,
     novel_virus_screening_agent_node,
     qc_agent_node,
     remote_execution_agent_node,
@@ -36,6 +37,7 @@ from .routing import (
     NODE_FINAL,
     NODE_HOST,
     NODE_INPUT,
+    NODE_LLM,
     NODE_NOVEL,
     NODE_PARSER,
     NODE_QC,
@@ -84,6 +86,7 @@ def build_graph() -> StateGraph:
     graph.add_node(NODE_VIRAL, viral_detection_agent_node)
     graph.add_node(NODE_RISK, risk_assessment_agent_node)
     graph.add_node(NODE_REVIEW, human_review_node)
+    graph.add_node(NODE_LLM, llm_interpretation_agent_node)
     graph.add_node(NODE_REPORT, report_writer_agent_node)
     graph.add_node(NODE_ERROR, error_handler_node)
     graph.add_node(NODE_FINAL, final_summary_node)
@@ -109,13 +112,15 @@ def build_graph() -> StateGraph:
     for name, _, nxt in _POST:
         graph.add_conditional_edges(name, make_step_router(nxt), {nxt: nxt, NODE_ERROR: NODE_ERROR})
 
-    # Risk → conditional review router.
+    # Risk → conditional review router (→ human review or straight to LLM/report).
     graph.add_conditional_edges(
         NODE_RISK,
         review_router,
-        {NODE_REVIEW: NODE_REVIEW, NODE_REPORT: NODE_REPORT, NODE_ERROR: NODE_ERROR},
+        {NODE_REVIEW: NODE_REVIEW, NODE_LLM: NODE_LLM, NODE_ERROR: NODE_ERROR},
     )
-    graph.add_edge(NODE_REVIEW, NODE_REPORT)
+    # Human review → LLM interpretation → report. (LLM node is a no-op unless enabled.)
+    graph.add_edge(NODE_REVIEW, NODE_LLM)
+    graph.add_edge(NODE_LLM, NODE_REPORT)
 
     # Error handler → best-effort report or finalize.
     graph.add_conditional_edges(
@@ -145,7 +150,7 @@ def describe_graph() -> str:
     order = [NODE_INPUT, NODE_QC, NODE_HOST, NODE_VIRAL,
              NODE_REMOTE_EXEC, NODE_RESULT_SYNC, NODE_PARSER,
              NODE_TAXONOMY, NODE_ABUNDANCE, NODE_NOVEL, NODE_RISK,
-             NODE_REVIEW, NODE_REPORT, NODE_FINAL, NODE_ERROR]
+             NODE_REVIEW, NODE_LLM, NODE_REPORT, NODE_FINAL, NODE_ERROR]
     for i, n in enumerate(order, 1):
         lines.append(f"  {i:2d}. {n}")
     lines += [
@@ -158,8 +163,8 @@ def describe_graph() -> str:
         "      local: -> taxonomy_agent",
         "  taxonomy_agent -> abundance_agent -> novel_virus_agent -> risk_assessment_agent",
         "  risk_assessment_agent -> human_review        [if review required]",
-        "  risk_assessment_agent -> report_writer_agent [if no review needed]",
-        "  human_review -> report_writer_agent -> final_summary -> END",
+        "  risk_assessment_agent -> llm_interpretation  [if no review needed]",
+        "  human_review -> llm_interpretation (optional LLM) -> report_writer_agent -> final_summary -> END",
         "  <any node> -> error_handler on critical error",
         "  error_handler -> report_writer_agent [can continue] | final_summary [stop]",
     ]

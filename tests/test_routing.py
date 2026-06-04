@@ -58,7 +58,10 @@ def test_review_router_sends_high_risk_to_review():
 
 
 def test_review_router_skips_review_when_clean():
-    assert review_router(_base_state(review_required=False)) == NODE_REPORT
+    # No review needed -> proceed to the (optional) LLM interpretation node.
+    from metamavs.routing import NODE_LLM
+
+    assert review_router(_base_state(review_required=False)) == NODE_LLM
 
 
 def test_review_router_errors_take_priority():

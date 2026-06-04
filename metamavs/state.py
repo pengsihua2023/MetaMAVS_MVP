@@ -82,6 +82,9 @@ class MetaMAVSState(TypedDict, total=False):
     reviewer_notes: str | None
     approved_for_report: bool
 
+    # --- phase 4: optional LLM interpretation ----------------------------
+    llm_narrative: dict[str, Any]
+
     # --- report writer ----------------------------------------------------
     markdown_report_path: str | None
     html_report_path: str | None
@@ -170,6 +173,7 @@ def create_initial_state(
         review_decision=None,
         reviewer_notes=None,
         approved_for_report=False,
+        llm_narrative={},
         markdown_report_path=None,
         html_report_path=None,
         tool_availability={},

@@ -21,6 +21,7 @@ NODE_ABUNDANCE = "abundance_agent"
 NODE_NOVEL = "novel_virus_agent"
 NODE_RISK = "risk_assessment_agent"
 NODE_REVIEW = "human_review"
+NODE_LLM = "llm_interpretation"
 NODE_REPORT = "report_writer_agent"
 NODE_FINAL = "final_summary"
 NODE_ERROR = "error_handler"
@@ -87,7 +88,7 @@ def review_router(state: MetaMAVSState) -> str:
         return NODE_ERROR
     if state.get("review_required"):
         return NODE_REVIEW
-    return NODE_REPORT
+    return NODE_LLM
 
 
 def error_handler_router(state: MetaMAVSState) -> str:

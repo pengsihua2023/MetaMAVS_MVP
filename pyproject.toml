@@ -22,7 +22,8 @@ dependencies = [
 
 [project.optional-dependencies]
 rich = ["rich>=13.0"]
-dev = ["pytest>=7.4", "rich>=13.0"]
+llm = ["anthropic>=0.40", "python-dotenv>=1.0"]
+dev = ["pytest>=7.4", "rich>=13.0", "anthropic>=0.40", "python-dotenv>=1.0"]
 
 [project.scripts]
 metamavs = "metamavs.cli:app"

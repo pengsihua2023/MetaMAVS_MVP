@@ -140,6 +140,15 @@ class HPCConfig(BaseModel):
     mock_fail_jobs: list[str] = Field(default_factory=list)
 
 
+class LLMConfig(BaseModel):
+    """Phase 4: optional LLM interpretation (Anthropic Claude). Off by default."""
+
+    enabled: bool = False
+    model: str = "claude-opus-4-8"
+    effort: Literal["low", "medium", "high", "max"] = "medium"
+    max_tokens: int = Field(default=4000, ge=256)
+
+
 class ReportConfig(BaseModel):
     formats: list[str] = Field(default_factory=lambda: ["markdown", "html"])
 
@@ -164,6 +173,7 @@ class MetaMAVSConfig(BaseModel):
     report: ReportConfig = Field(default_factory=ReportConfig)
     slurm: SlurmConfig = Field(default_factory=SlurmConfig)
     hpc: HPCConfig = Field(default_factory=HPCConfig)
+    llm: LLMConfig = Field(default_factory=LLMConfig)
 
 
 def load_config(path: str | Path) -> MetaMAVSConfig:

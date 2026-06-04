@@ -68,7 +68,7 @@ def test_low_risk_clean_run_skips_review(tmp_path):
     """A run with no high-risk pathogens / novel candidates / QC failures
     should route directly to the report writer (review_required False)."""
 
-    from metamavs.routing import review_router, NODE_REPORT
+    from metamavs.routing import review_router, NODE_LLM
 
     state = {
         "config": {"risk": {"review_on_high_risk": True, "review_on_novel_candidates": True, "review_on_qc_failure": True}},
@@ -76,4 +76,5 @@ def test_low_risk_clean_run_skips_review(tmp_path):
         "can_continue": True,
         "review_required": False,
     }
-    assert review_router(state) == NODE_REPORT
+    # No review needed -> straight to the (optional, no-op when disabled) LLM node.
+    assert review_router(state) == NODE_LLM
