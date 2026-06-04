@@ -90,6 +90,12 @@ class MetaMAVSState(TypedDict, total=False):
     tool_availability: dict[str, Any]
     execution_reports: Annotated[list[dict[str, Any]], operator.add]
 
+    # --- phase 3: remote (HPC) execution ---------------------------------
+    remote_job_specs: Annotated[list[dict[str, Any]], operator.add]
+    remote_execution_result: dict[str, Any]
+    synced_manifest: dict[str, Any]
+    parse_results: Annotated[list[dict[str, Any]], operator.add]
+
     # --- cross-cutting accumulators (use reducers) -----------------------
     warnings: Annotated[list[str], operator.add]
     errors: Annotated[list[dict[str, Any]], operator.add]
@@ -168,6 +174,10 @@ def create_initial_state(
         html_report_path=None,
         tool_availability={},
         execution_reports=[],
+        remote_job_specs=[],
+        remote_execution_result={},
+        synced_manifest={},
+        parse_results=[],
         warnings=[],
         errors=[],
         execution_log=[],

@@ -58,7 +58,7 @@ MetaMAVS 采用**渐进式交付**:先跑通骨架,再逐步加真实能力。**
 |---|---|---|---|---|---|
 | **Phase 1** | 最小可运行原型 | 确定性、本地、dry-run 跑通整条 LangGraph 流程,出报告+测试 | ❌ 不需要 | ❌ 不需要 | ✅ **已完成** |
 | **Phase 2** | 真实命令执行 | 把 dry-run 生成的命令真正跑起来,加工具检查、校验、恢复、SLURM | ⚠️ 需要部分工具 | ❌ 不需要 | ✅ **已完成** |
-| **Phase 3** | 生信工具扩展 | 接入全部真实生信工具并解析其输出 | ✅ 需要 | ❌ 不需要 | ⬜ 未开始 |
+| **Phase 3** | 生信工具扩展(混合 HPC) | 本地控制端提交 SLURM 作业到远程 HPC,下载结果,本地解析 | ✅ 需要(在 HPC 上) | ❌ 不需要 | ✅ **已完成(v1)** |
 | **Phase 4** | 智能解释 | 在选定节点接入 LLM 做解释/叙述/报告润色 | ✅ 需要 | ✅ 需要(可选) | ⬜ 未开始 |
 
 下面逐个展开。
@@ -91,14 +91,19 @@ MetaMAVS 采用**渐进式交付**:先跑通骨架,再逐步加真实能力。**
 - **SLURM 脚本生成**,由 config 的 `slurm:` 段驱动(`workflows/slurm_workflow.py`)
 - 新增 13 个测试(共 50 个全绿);dry-run 行为完全保留
 
-### Phase 3 — 生信工具扩展 ⬜
-接入并解析真实工具的输出,把合成数据替换为真实结果:
-- 质控:FastQC、fastp、MultiQC
-- 去宿主:Bowtie2、BWA、minimap2
-- 病毒检测:Kraken2、KrakenUniq、Centrifuge、DIAMOND、BLAST
-- 组装与新型筛查:MEGAHIT、metaSPAdes、VirSorter2、VIBRANT、geNomad、CheckV、DeepVirFinder
-
-工作量主要是:把各工具的 report 解析成与现有 `raw_viral_hits` / 分类表**相同的结构**,下游节点无需改动。
+### Phase 3 — 生信工具扩展(混合 HPC)✅(v1 已完成)
+采用**本地控制 + HPC 执行 + 结果回传**的混合架构(详见 `PHASE3_DESIGN.md`)。
+MetaMAVS 主体留在本地;只有自包含的 SLURM 脚本 + 输入跨到集群;结果下载回本地解析。
+- `metamavs/remote/`:`RemoteBackend` 抽象(`SSHBackend` 真实、`MockBackend` 本地测试)、
+  `slurm.py`(脚本生成、`sacct` 解析、依赖 DAG、轮询)、`job_ledger.py`(可恢复 jobs.json)、`jobgen.py`。
+- 新增 3 个 agent:`remote_execution`(暂存→sbatch DAG→监控)、`result_sync`(下载+完整性)、
+  `tool_output_parser`(原始输出→标准化表)。
+- `metamavs/parsers/`:FastQC、samtools flagstat、Kraken2、Bracken、DIAMOND、CheckV——
+  防御式解析器,产出供现有 taxonomy/abundance/risk agent 使用的表。
+- 新增 `execution.mode: hpc` + `hpc:` 配置;`input.remote_data`(数据已在集群);
+  `mode_router` 选择本地 vs 远程,**不改动 Phase 1/2**。
+- 新增 17 个测试,含用 `MockBackend` + fixtures 的完整 hpc 模式集成测试(无需真集群)。共 67 个全绿。
+- 真集群加固待办:敲定各工具的远程命令参数,跑一次受守卫的真实 SSH 冒烟测试。
 
 ### Phase 4 — 智能解释(LLM)⬜
 在选定节点内接入 LLM 推理(此时才可能引入 LangChain / LLM SDK):

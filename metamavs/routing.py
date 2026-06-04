@@ -24,6 +24,10 @@ NODE_REVIEW = "human_review"
 NODE_REPORT = "report_writer_agent"
 NODE_FINAL = "final_summary"
 NODE_ERROR = "error_handler"
+# Phase 3 remote (HPC) nodes.
+NODE_REMOTE_EXEC = "remote_execution_agent"
+NODE_RESULT_SYNC = "result_sync_agent"
+NODE_PARSER = "tool_output_parser_agent"
 
 
 def has_critical_error(state: MetaMAVSState) -> bool:
@@ -55,6 +59,20 @@ def make_step_router(next_node: str) -> Callable[[MetaMAVSState], str]:
 
     _route.__name__ = f"route_to_{next_node}"
     return _route
+
+
+def mode_router(state: MetaMAVSState) -> str:
+    """After the command-builder agents, route on ``execution.mode``.
+
+    ``hpc`` → run the remote stage (remote_execution → result_sync → parser);
+    otherwise (local/dry-run) → straight to taxonomy on the already-produced
+    tables.
+    """
+
+    if has_critical_error(state):
+        return NODE_ERROR
+    mode = (state.get("config", {}).get("execution", {}) or {}).get("mode", "local")
+    return NODE_REMOTE_EXEC if mode == "hpc" else NODE_TAXONOMY
 
 
 def review_router(state: MetaMAVSState) -> str:

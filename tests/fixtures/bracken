@@ -1,0 +1,4 @@
+name	taxonomy_id	taxonomy_lvl	kraken_assigned_reads	added_reads	new_est_reads	fraction_total_reads
+Influenza A virus	11320	S	3000	600	3600	0.02
+Norovirus	11983	S	2000	480	2480	0.01
+Escherichia phage T4	10665	S	1500	360	1860	0.01

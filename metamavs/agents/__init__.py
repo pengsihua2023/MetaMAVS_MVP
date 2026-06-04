@@ -13,9 +13,12 @@ from .human_review import human_review_node
 from .input_manager import input_manager_node
 from .novel_virus_agent import novel_virus_screening_agent_node
 from .qc_agent import qc_agent_node
+from .remote_execution_agent import remote_execution_agent_node
 from .report_writer_agent import report_writer_agent_node
+from .result_sync_agent import result_sync_agent_node
 from .risk_assessment_agent import risk_assessment_agent_node
 from .taxonomy_agent import taxonomy_classification_agent_node
+from .tool_output_parser_agent import tool_output_parser_agent_node
 from .viral_detection_agent import viral_detection_agent_node
 
 __all__ = [
@@ -31,4 +34,7 @@ __all__ = [
     "report_writer_agent_node",
     "error_handler_node",
     "final_summary_node",
+    "remote_execution_agent_node",
+    "result_sync_agent_node",
+    "tool_output_parser_agent_node",
 ]

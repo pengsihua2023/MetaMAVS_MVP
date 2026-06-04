@@ -1,0 +1,50 @@
+# MetaMAVS example HPC configuration (Phase 3).
+# Local controller submits SLURM jobs to a remote cluster, downloads results,
+# and parses them locally. Set hpc.backend to "ssh" for a real cluster, or
+# "mock" to dry-test the whole flow locally against fixture outputs.
+project:
+  name: MetaMAVS
+  run_name: example_hpc_run
+  output_dir: reports/example_hpc_run
+
+input:
+  manifest: data/example_manifest.csv
+  sequencing_type: paired_end
+  remote_data: true          # FASTQ already live on the HPC (no upload)
+
+execution:
+  dry_run: false
+  mode: hpc                  # route bioinformatics steps to the cluster
+  threads: 8
+
+tools:
+  qc: {fastqc: true, fastp: true, multiqc: true}
+  host_removal: {tool: bowtie2, host_reference: /scratch/refs/host}
+  viral_detection:
+    tools: [kraken2, diamond]
+    kraken2_db: /scratch/db/kraken2_viral
+    diamond_db: /scratch/db/rvdb.dmnd
+  assembly: {enabled: true, assembler: megahit}
+  novel_virus_screening: {enabled: true, tools: [virsorter2, checkv]}
+
+risk:
+  high_risk_pathogens: [SARS-CoV-2, Influenza A virus, Influenza B virus, Norovirus, Enterovirus]
+  review_on_high_risk: true
+  review_on_novel_candidates: true
+  review_on_qc_failure: true
+
+report:
+  formats: [markdown, html]
+
+hpc:
+  backend: ssh               # "ssh" for a real cluster, "mock" for local testing
+  host: hpc.university.edu   # or a ~/.ssh/config Host alias
+  user: myusername
+  remote_base: ~/metamavs_runs
+  partition: batch
+  conda_env: metamavs-tools
+  modules: [kraken2/2.1.3, bracken/2.9, diamond/2.1.8, samtools/1.19]
+  retries: 3
+  poll_interval_s: 30
+  max_wait_s: 86400
+  # mock_fixtures_dir: tests/fixtures   # used only when backend == "mock"

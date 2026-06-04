@@ -81,7 +81,7 @@ real capabilities step by step. There are **4 phases total**:
 |---|---|---|---|---|---|
 | **Phase 1** | Minimal Runnable Prototype | Deterministic, local, dry-run run of the full LangGraph flow, with reports + tests | ❌ No | ❌ No | ✅ **Done** |
 | **Phase 2** | Real Command Execution | Actually execute the generated commands; tool checks, validation, recovery, SLURM | ⚠️ Some | ❌ No | ✅ **Done** |
-| **Phase 3** | Bioinformatics Expansion | Integrate all real bioinformatics tools and parse their outputs | ✅ Yes | ❌ No | ⬜ Not started |
+| **Phase 3** | Bioinformatics Expansion (hybrid HPC) | Local controller submits SLURM jobs to a remote HPC, downloads results, parses them locally | ✅ Yes (on HPC) | ❌ No | ✅ **Done (v1)** |
 | **Phase 4** | Intelligent Interpretation | Inject LLM reasoning into selected nodes for interpretation/narrative/prose | ✅ Yes | ✅ Yes (optional) | ⬜ Not started |
 
 Each phase is detailed below.
@@ -123,17 +123,23 @@ Delivered on top of Phase 1 without touching the graph wiring:
   (`workflows/slurm_workflow.py`)
 - 13 new tests (50 total, all passing); dry-run behavior fully preserved
 
-### Phase 3 — Bioinformatics Expansion ⬜
-Integrate and parse real tool outputs, replacing synthetic data with real
-results:
-- QC: FastQC, fastp, MultiQC
-- Host removal: Bowtie2, BWA, minimap2
-- Viral detection: Kraken2, KrakenUniq, Centrifuge, DIAMOND, BLAST
-- Assembly & novel screening: MEGAHIT, metaSPAdes, VirSorter2, VIBRANT,
-  geNomad, CheckV, DeepVirFinder
-
-The main work: parse each tool's report into the **same structure** as the
-existing `raw_viral_hits` / taxonomy tables; downstream nodes need no changes.
+### Phase 3 — Bioinformatics Expansion (hybrid HPC) ✅ (v1 done)
+Hybrid **local-control + HPC-execution + result-repatriation** architecture (see
+`PHASE3_DESIGN.md`). MetaMAVS stays local; only self-contained SLURM scripts +
+inputs cross to the cluster; results are downloaded and parsed locally.
+- `metamavs/remote/`: `RemoteBackend` abstraction (`SSHBackend` real,
+  `MockBackend` for local testing), `slurm.py` (script gen, `sacct` parsing,
+  dependency DAG, polling), `job_ledger.py` (resumable jobs.json), `jobgen.py`.
+- 3 new agents: `remote_execution` (stage→sbatch DAG→monitor), `result_sync`
+  (download + integrity), `tool_output_parser` (raw outputs → normalized tables).
+- `metamavs/parsers/`: FastQC, samtools flagstat, Kraken2, Bracken, DIAMOND,
+  CheckV — defensive parsers feeding the existing taxonomy/abundance/risk agents.
+- New `execution.mode: hpc` + `hpc:` config; `input.remote_data` for data already
+  on the cluster; `mode_router` selects local vs remote without touching Phase 1/2.
+- 17 new tests incl. a full hpc-mode integration run via `MockBackend` + fixtures
+  (no real cluster). 67 tests total, all passing.
+- Remaining for "real cluster" hardening: finalize per-tool remote command flags
+  and run a guarded live-SSH smoke test.
 
 ### Phase 4 — Intelligent Interpretation (LLM) ⬜
 Inject LLM reasoning inside selected nodes (LangChain / an LLM SDK may be

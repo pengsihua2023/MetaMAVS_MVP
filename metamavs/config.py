@@ -23,11 +23,15 @@ class ProjectConfig(BaseModel):
 class InputConfig(BaseModel):
     manifest: str
     sequencing_type: Literal["paired_end", "single_end"] = "paired_end"
+    # Phase 3: when True, manifest read1/read2 are paths on the HPC (no upload,
+    # and local existence is not required).
+    remote_data: bool = False
 
 
 class ExecutionConfig(BaseModel):
     dry_run: bool = True
-    mode: Literal["local", "slurm"] = "local"
+    # "hpc" routes bioinformatics steps to a remote SLURM cluster (Phase 3).
+    mode: Literal["local", "slurm", "hpc"] = "local"
     threads: int = Field(default=8, ge=1)
     # Phase 2: extra attempts for a failing command before giving up (0 = no retry).
     retries: int = Field(default=0, ge=0)
@@ -94,6 +98,25 @@ class SlurmConfig(BaseModel):
     conda_env: str | None = None
 
 
+class HPCConfig(BaseModel):
+    """Remote HPC execution settings (Phase 3)."""
+
+    backend: Literal["ssh", "mock"] = "ssh"
+    host: str | None = None
+    user: str | None = None
+    remote_base: str = "~/metamavs_runs"
+    partition: str = "batch"
+    conda_env: str | None = None
+    modules: list[str] = Field(default_factory=list)
+    retries: int = Field(default=3, ge=0)
+    poll_interval_s: int = Field(default=30, ge=1)
+    max_wait_s: int = Field(default=86400, ge=1)
+    # For backend == "mock": directory of fake tool outputs used as fixtures,
+    # and an optional list of job_names to force-FAIL (to exercise recovery).
+    mock_fixtures_dir: str | None = None
+    mock_fail_jobs: list[str] = Field(default_factory=list)
+
+
 class ReportConfig(BaseModel):
     formats: list[str] = Field(default_factory=lambda: ["markdown", "html"])
 
@@ -117,6 +140,7 @@ class MetaMAVSConfig(BaseModel):
     risk: RiskConfig = Field(default_factory=RiskConfig)
     report: ReportConfig = Field(default_factory=ReportConfig)
     slurm: SlurmConfig = Field(default_factory=SlurmConfig)
+    hpc: HPCConfig = Field(default_factory=HPCConfig)
 
 
 def load_config(path: str | Path) -> MetaMAVSConfig:

@@ -69,6 +69,12 @@ def maybe_execute_step(
     warnings: list[str] = []
     report: dict[str, Any] = {"step": step, "n_commands": len(commands)}
 
+    # Phase 3: in HPC mode, execution is deferred to the remote_execution stage.
+    mode = (state.get("config", {}).get("execution", {}) or {}).get("mode", "local")
+    if mode == "hpc":
+        report.update(mode="remote_deferred", fell_back=True, tools={}, n_ok=0, n_failed=0, outputs_ok=None)
+        return report, warnings, True
+
     if runner.dry_run:
         report.update(mode="dry_run", fell_back=True, tools={}, n_ok=0, n_failed=0, outputs_ok=None)
         return report, warnings, True

@@ -66,7 +66,8 @@ def _build_markdown(state: MetaMAVSState) -> str:
         parts.append(
             md_table(
                 ["Sample", "Mean Q", "Total reads", "Adapter %", "QC"],
-                [[r["sample_id"], r["mean_quality"], r["total_reads"], r["adapter_pct"], r["qc_status"]]
+                [[r.get("sample_id", "?"), r.get("mean_quality", "-"), r.get("total_reads", "-"),
+                  r.get("adapter_pct", "-"), r.get("qc_status", "-")]
                  for r in qc["per_sample"]],
             )
         )

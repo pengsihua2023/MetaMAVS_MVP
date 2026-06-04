@@ -78,6 +78,7 @@ def validate_manifest(
     *,
     sequencing_type: str = "paired_end",
     dry_run: bool = True,
+    remote_data: bool = False,
 ) -> ManifestValidationResult:
     """Validate a sample manifest CSV.
 
@@ -142,7 +143,9 @@ def validate_manifest(
         if paired and not row.read2:
             errors.append(f"Sample '{row.sample_id}': read2 is required for paired_end mode")
 
-        if not dry_run:
+        if remote_data:
+            pass  # paths live on the HPC; local existence is not required
+        elif not dry_run:
             for label, fp in (("read1", row.read1), ("read2", row.read2)):
                 if fp and not Path(fp).exists():
                     errors.append(f"Sample '{row.sample_id}': {label} file not found: {fp}")

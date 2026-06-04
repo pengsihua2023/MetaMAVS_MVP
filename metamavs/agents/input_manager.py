@@ -27,9 +27,12 @@ def input_manager_node(state: MetaMAVSState) -> dict[str, Any]:
     dry_run = state.get("dry_run", True)
 
     seq_type = config.get("input", {}).get("sequencing_type", "paired_end")
+    remote_data = config.get("input", {}).get("remote_data", False)
     manifest_path = state["manifest_path"]
 
-    result = validate_manifest(manifest_path, sequencing_type=seq_type, dry_run=dry_run)
+    result = validate_manifest(
+        manifest_path, sequencing_type=seq_type, dry_run=dry_run, remote_data=remote_data
+    )
 
     warnings = list(result.warnings)
     errors: list[dict[str, Any]] = []
