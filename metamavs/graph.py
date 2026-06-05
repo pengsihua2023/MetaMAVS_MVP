@@ -51,6 +51,7 @@ from .routing import (
     error_handler_router,
     make_step_router,
     mode_router,
+    review_pause_router,
     review_router,
 )
 from .state import MetaMAVSState
@@ -118,8 +119,12 @@ def build_graph() -> StateGraph:
         review_router,
         {NODE_REVIEW: NODE_REVIEW, NODE_LLM: NODE_LLM, NODE_ERROR: NODE_ERROR},
     )
-    # Human review → LLM interpretation → report. (LLM node is a no-op unless enabled.)
-    graph.add_edge(NODE_REVIEW, NODE_LLM)
+    # Human review → (pause→END for `metamavs review`) | LLM interpretation → report.
+    graph.add_conditional_edges(
+        NODE_REVIEW,
+        review_pause_router,
+        {"paused_end": END, NODE_LLM: NODE_LLM},
+    )
     graph.add_edge(NODE_LLM, NODE_REPORT)
 
     # Error handler → best-effort report or finalize.

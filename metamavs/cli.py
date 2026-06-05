@@ -157,6 +157,46 @@ def tools(
     _echo(f"\n{n_ok}/{len(seen)} available. Missing tools trigger graceful fallback in --execute mode.")
 
 
+@app.command()
+def review(
+    run_dir: Path = typer.Option(..., "--run-dir", "-r", exists=True, help="Paused run directory."),
+    approve: Optional[bool] = typer.Option(None, "--approve/--reject", help="Decision (omit to be prompted)."),
+    notes: str = typer.Option("", "--notes", help="Reviewer notes."),
+):
+    """Human-in-the-loop: approve/reject a paused run and resume it."""
+
+    from .workflows.local_workflow import load_pending_review, resume_after_review
+
+    setup_logging(level=logging.INFO)
+    pending = load_pending_review(run_dir)
+    if pending is None:
+        _echo(f"No run awaiting review in {run_dir}. (Run with human_review.mode=pause to enable.)")
+        raise typer.Exit(code=1)
+
+    ctx = (pending.get("risk_summary", {}) or {})
+    _echo("\n=== MetaMAVS HUMAN REVIEW ===")
+    _echo(f"  Run id       : {pending.get('run_id')}")
+    _echo(f"  Overall risk : {ctx.get('overall_risk')}")
+    qc = pending.get("qc_pass_fail", {}) or {}
+    fails = [s for s, v in qc.items() if str(v).lower() == "fail"]
+    _echo(f"  Triggers     : risk={ctx.get('overall_risk')}"
+          f"{', novel candidates' if pending.get('novel_candidate_summary', {}).get('n_candidates') else ''}"
+          f"{', QC fail: ' + ','.join(fails) if fails else ''}")
+    _echo("  Top detections:")
+    for r in ctx.get("top_risks", [])[:5]:
+        _echo(f"    - {r.get('taxon_name')}: {r.get('risk_level')} ({r.get('total_reads')} reads) — {str(r.get('reasons',''))[:80]}")
+
+    if approve is None:
+        answer = typer.prompt("\nApprove results for reporting? [y/N]", default="n")
+        approve = answer.strip().lower() in {"y", "yes"}
+
+    final = resume_after_review(run_dir, approved=bool(approve), notes=notes)
+    if approve:
+        _echo(f"\nApproved. Report: {final.get('markdown_report_path')}")
+    else:
+        _echo("\nRejected — no report generated. Status: rejected_by_reviewer")
+
+
 @app.command(name="remote-check")
 def remote_check(
     config: Path = typer.Option(..., "--config", "-c", exists=True, help="Path to YAML config."),

@@ -161,6 +161,18 @@ class LLMConfig(BaseModel):
     max_tokens: int = Field(default=4000, ge=256)
 
 
+class HumanReviewConfig(BaseModel):
+    """Human-in-the-loop behaviour when a review is triggered.
+
+    - "auto":        simulate approval (default; non-blocking, for automation).
+    - "interactive": prompt y/N at the terminal (needs a real TTY, foreground).
+    - "pause":       PAUSE the run and exit; a human later runs ``metamavs review``
+                     to approve/reject and resume — works with background/HPC runs.
+    """
+
+    mode: Literal["auto", "interactive", "pause"] = "auto"
+
+
 class ReportConfig(BaseModel):
     formats: list[str] = Field(default_factory=lambda: ["markdown", "html"])
 
@@ -183,6 +195,7 @@ class MetaMAVSConfig(BaseModel):
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     risk: RiskConfig = Field(default_factory=RiskConfig)
     report: ReportConfig = Field(default_factory=ReportConfig)
+    human_review: HumanReviewConfig = Field(default_factory=HumanReviewConfig)
     slurm: SlurmConfig = Field(default_factory=SlurmConfig)
     hpc: HPCConfig = Field(default_factory=HPCConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)

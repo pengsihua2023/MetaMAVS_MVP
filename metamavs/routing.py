@@ -76,6 +76,13 @@ def mode_router(state: MetaMAVSState) -> str:
     return NODE_REMOTE_EXEC if mode == "hpc" else NODE_TAXONOMY
 
 
+def review_pause_router(state: MetaMAVSState) -> str:
+    """After human_review: if the run paused for a human, end here (resume later
+    via ``metamavs review``); otherwise continue to interpretation/report."""
+
+    return "paused_end" if state.get("awaiting_review") else NODE_LLM
+
+
 def review_router(state: MetaMAVSState) -> str:
     """Decide whether human review is required after risk assessment.
 

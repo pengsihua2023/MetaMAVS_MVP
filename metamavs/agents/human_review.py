@@ -39,7 +39,7 @@ def human_review_node(state: MetaMAVSState) -> dict[str, Any]:
     run_dir = Path(state["run_dir"])
     context = _build_review_context(state)
     dry_run = state.get("dry_run", True)
-    interactive = sys.stdin.isatty() and not dry_run
+    mode = (state.get("config", {}).get("human_review", {}) or {}).get("mode", "auto")
 
     triggers: list[str] = []
     if context["overall_risk"] in {"High", "Critical"}:
@@ -49,10 +49,29 @@ def human_review_node(state: MetaMAVSState) -> dict[str, Any]:
     if context["qc_failures"]:
         triggers.append(f"QC failure: {', '.join(context['qc_failures'])}")
 
+    # --- pause mode: stop and wait for `metamavs review` (durable HITL) ------
+    if mode == "pause":
+        request = {"run_id": state.get("run_id"), "triggers": triggers, "context": context,
+                   "status": "awaiting_human_review",
+                   "instructions": "Approve/reject with: metamavs review --run-dir <run_dir>"}
+        req_path = write_json(run_dir / "review_request.json", request)
+        logger.info("Human review REQUIRED — pausing run, awaiting human decision")
+        return {
+            "awaiting_review": True,
+            "review_required": True,
+            "review_decision": "awaiting_human_review",
+            "review_request_path": str(req_path),
+            "approved_for_report": False,
+            "execution_log": ["human_review: PAUSED awaiting human decision"],
+        }
+
+    interactive = mode == "interactive" and sys.stdin.isatty() and not dry_run
     if interactive:  # pragma: no cover - requires a real TTY
         print("\n=== MetaMAVS HUMAN REVIEW ===")
         print(f"Triggers: {'; '.join(triggers) or 'manual'}")
         print(f"Overall risk: {context['overall_risk']}")
+        for r in context.get("top_risks", [])[:5]:
+            print(f"  - {r.get('taxon_name')}: {r.get('risk_level')} ({r.get('total_reads')} reads)")
         answer = input("Approve results for reporting? [y/N]: ").strip().lower()
         approved = answer in {"y", "yes"}
         decision = "approved" if approved else "rejected"
@@ -61,7 +80,7 @@ def human_review_node(state: MetaMAVSState) -> dict[str, Any]:
         approved = True
         decision = "approved_simulated"
         notes = (
-            "Auto-approved in dry-run/non-interactive mode. "
+            "Auto-approved (mode=auto / non-interactive). "
             f"Triggers: {'; '.join(triggers) or 'none'}."
         )
 
@@ -74,5 +93,6 @@ def human_review_node(state: MetaMAVSState) -> dict[str, Any]:
         "review_decision": decision,
         "reviewer_notes": notes,
         "approved_for_report": approved,
+        "awaiting_review": False,
         "execution_log": [f"human_review: {decision}"],
     }
