@@ -269,26 +269,72 @@ Any node with a critical error → error_handler (12) → best-effort report if 
 ```
 
 ### 6.2 Node responsibility quick reference
-| # | Node | One-line responsibility |
-|---|---|---|
-| 1 | input_manager | Entry gatekeeper: validate manifest/metadata, produce `validated_manifest.csv` |
-| 2 | qc_agent | Generate FastQC/fastp/MultiQC commands, make pass/fail decisions |
-| 3 | host_removal_agent | Generate Bowtie2/BWA/minimap2 host-removal commands |
-| 4 | viral_detection_agent | Generate Kraken2/DIAMOND etc. commands, produce raw hits + candidate taxa |
-| 5 | taxonomy_agent | Normalize taxonomy, flag phage/false-positive/low-complexity |
-| 6 | abundance_agent | RPM / genome-length normalization, cross-sample time trends |
-| 7 | novel_virus_agent | Assembly + VirSorter2/CheckV etc. screening, pick novel/divergent candidates |
-| 8 | risk_assessment_agent | Combine evidence into Low/Medium/High/Critical, set review need |
-| 9 | human_review | HITL checkpoint: let a human decide on high risk (auto-approve in dry-run) |
-| 10 | report_writer_agent | Generate Markdown + HTML surveillance report |
-| 11 | final_summary | Final summary, report paths, persist `state.json` |
-| 12 | error_handler | Classify errors, decide whether to continue, prevent silent failures |
+`🧠` marks nodes that are **LLM agents** (use Claude when enabled; deterministic
+fallback otherwise). The Phase 3 remote nodes (remote_execution, result_sync,
+tool_output_parser) and llm_interpretation are omitted here for brevity.
 
-### 6.3 Routing logic (`routing.py`)
+| # | Node | LLM | One-line responsibility |
+|---|---|---|---|
+| 1 | input_manager | | Entry gatekeeper: validate manifest/metadata, produce `validated_manifest.csv` |
+| 2 | qc_agent | 🧠 | QC commands + pass/fail; LLM data-adequacy assessment |
+| 3 | host_removal_agent | | Generate Bowtie2/BWA/minimap2 host-removal commands |
+| 4 | viral_detection_agent | | Generate Kraken2/DIAMOND/GOTTCHA2 commands, produce raw hits + candidate taxa |
+| 5 | taxonomy_agent | 🧠 | Normalize taxonomy; LLM classifies phage/pathogen/false-positive, **grounded in NCBI lineage** |
+| 6 | abundance_agent | 🧠 | RPM normalization + trends; LLM epidemiological trend interpretation |
+| 7 | novel_virus_agent | 🧠 | Assembly + screening commands; LLM assesses novel/divergent candidates |
+| 8 | risk_assessment_agent | 🧠 | Low/Medium/High/Critical per taxon; LLM reasoning + NCBI lineage, within safety rails |
+| 9 | human_review | | HITL checkpoint (auto / interactive / **pause-and-resume**) |
+| (–) | llm_interpretation | 🧠 | Public-health surveillance narrative for the report |
+| 10 | report_writer_agent | | Generate Markdown + HTML surveillance report |
+| 11 | final_summary | | Final summary, report paths, persist `state.json` |
+| 12 | error_handler | | Classify errors, decide whether to continue, prevent silent failures |
+
+### 6.3 LLM agents (the "brains")
+Six nodes are **real LLM agents** (Anthropic Claude, `claude-opus-4-8`): qc,
+taxonomy, abundance, novel_virus, risk, and llm_interpretation. The other nodes
+are infrastructure / IO / control and deliberately stay deterministic — they
+don't need a brain.
+
+**Design principles (all four hold for every LLM agent):**
+1. **Optional & key-free fallback** — disabled by default (`llm.enabled: false`);
+   no key / SDK / API failure → clean fall back to deterministic logic. Phases
+   1–3 never need an API key.
+2. **Grounded, not memory-only** — judgement is grounded in (a) verified **NCBI
+   Taxonomy** lineage fetched by taxid (`ncbi.enabled`, local controller; Division
+   `Phages` = authoritative phage), (b) a curated **literature reference**
+   (`llm/reference.py`, also the cached prefix), and (c) per-pathogen snippets.
+3. **Deterministic safety rails** — the LLM may only *add* caution, never reduce
+   it: phages/false-positives pinned Low, configured high-risk pathogens floored
+   at High (`_clamp_llm_risk`); taxonomy flags are a union (LLM can add, not
+   remove); PMMoV/crAssphage treated as normalization **controls**, not threats.
+4. **Cost-aware** — the shared reference is the cached system-prompt prefix
+   (>1024 tokens → real prompt-cache hits across agents within a run).
+
+Knowledge layers stacked per judgement: **NCBI (authoritative) + literature
+reference + Claude training knowledge → inside deterministic safety rails.**
+
+### 6.4 Human-in-the-loop review (`human_review.mode`)
+The review checkpoint can genuinely involve a human. Triggered when overall risk
+is High/Critical, novel candidates exist, or a sample fails QC. Three modes:
+- **auto** (default): simulate approval — non-blocking, for automation/CI.
+- **interactive**: y/N prompt at a real TTY (foreground runs).
+- **pause**: PAUSE the run at the checkpoint and exit, persisting a resumable
+  snapshot (`paused_state.json`) + `review_request.json`. A human later runs
+  `metamavs review --run-dir <dir>` to see the risk context and approve/reject
+  (`--approve`/`--reject` or interactive). Approval resumes
+  interpretation→report→final; rejection finalizes with no report. Decoupled
+  from the run, so it works with **background / long HPC runs and delayed human
+  decisions** — the decision and reviewer notes are recorded in the report.
+
+### 6.5 Routing logic (`routing.py`)
 - `make_step_router(next)`: the "error guard" attached after each backbone node
   — on a critical error route to `error_handler`, otherwise to the next node.
+- `mode_router`: after viral_detection — to the remote (HPC) chain if
+  `execution.mode == hpc`, else straight to taxonomy.
 - `review_router`: branch after risk — to `human_review` if review needed,
-  otherwise straight to `report_writer`.
+  otherwise to `llm_interpretation` → report.
+- `review_pause_router`: after `human_review` — to END if the run paused for a
+  human (resume later via `metamavs review`), else continue to interpretation.
 - `error_handler_router`: after `error_handler` — to `report_writer` if it can
   continue, otherwise to `final_summary`.
 - `should_request_review`: decides whether to trigger human review (high/critical
@@ -345,11 +391,20 @@ reports/<run_name>/
 ```bash
 pip install -e ".[dev]"
 metamavs graph    --config configs/example_config.yaml   # view workflow structure
-metamavs validate --config configs/example_config.yaml   # validate only
+metamavs validate --config configs/example_config.yaml   # validate config + manifest
+metamavs tools    --config configs/example_config.yaml   # check tool availability
 metamavs run      --config configs/example_config.yaml --dry-run  # run full flow
+# HPC (Phase 3): real run + human-in-the-loop review
+metamavs remote-check --config configs/sapelo2_config.yaml        # diagnose SSH/SLURM
+metamavs run          --config configs/sapelo2_config.yaml --execute  # may PAUSE for review
+metamavs review --run-dir reports/<run_name> --approve --notes "…"   # human decision
 pytest                                                    # run tests
 ```
 (If not installed, use `python -m metamavs.cli ...` instead of `metamavs`.)
+
+**Optional LLM + NCBI grounding:** put `ANTHROPIC_API_KEY` in `.env`, set
+`llm.enabled: true` and (optionally) `ncbi.enabled: true` in the config. Without
+these, everything runs deterministically and key-free.
 
 ---
 

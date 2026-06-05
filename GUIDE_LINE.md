@@ -213,24 +213,49 @@ START
 ```
 
 ### 6.2 节点职责速查
-| # | 节点 | 一句话职责 |
-|---|---|---|
-| 1 | input_manager | 入口守门:校验清单/元数据,产出 `validated_manifest.csv` |
-| 2 | qc_agent | 生成 FastQC/fastp/MultiQC 命令,做通过/失败判定 |
-| 3 | host_removal_agent | 生成 Bowtie2/BWA/minimap2 去宿主命令 |
-| 4 | viral_detection_agent | 生成 Kraken2/DIAMOND 等命令,产出原始命中表+候选 taxon |
-| 5 | taxonomy_agent | 归一分类,标记噬菌体/假阳性/低复杂度 |
-| 6 | abundance_agent | RPM/基因组长度归一化,跨样本时间趋势 |
-| 7 | novel_virus_agent | 组装+VirSorter2/CheckV 等筛查,挑出新型/分歧候选 |
-| 8 | risk_assessment_agent | 综合证据评 Low/Medium/High/Critical,定是否人审 |
-| 9 | human_review | HITL 检查点:高风险时让人拍板(dry-run 自动批准) |
-| 10 | report_writer_agent | 生成 Markdown + HTML 监测报告 |
-| 11 | final_summary | 终末摘要、报告路径、落盘 `state.json` |
-| 12 | error_handler | 错误分类、判定能否继续、防止静默失败 |
+`🧠` 标记**LLM agent**(启用时用 Claude,否则退回确定性)。Phase 3 远程节点
+(remote_execution/result_sync/tool_output_parser)从略。
 
-### 6.3 路由逻辑(`routing.py`)
+| # | 节点 | LLM | 一句话职责 |
+|---|---|---|---|
+| 1 | input_manager | | 入口守门:校验清单/元数据,产出 `validated_manifest.csv` |
+| 2 | qc_agent | 🧠 | QC 命令+通过/失败;LLM 评估数据是否足够检测 |
+| 3 | host_removal_agent | | 生成 Bowtie2/BWA/minimap2 去宿主命令 |
+| 4 | viral_detection_agent | | 生成 Kraken2/DIAMOND/GOTTCHA2 命令,产出原始命中+候选 taxon |
+| 5 | taxonomy_agent | 🧠 | 归一分类;LLM 判 噬菌体/病原/假阳性,**基于 NCBI 真实谱系 grounding** |
+| 6 | abundance_agent | 🧠 | RPM 归一化+趋势;LLM 做流行病学趋势解读 |
+| 7 | novel_virus_agent | 🧠 | 组装+筛查命令;LLM 评估新型/分歧候选 |
+| 8 | risk_assessment_agent | 🧠 | 逐 taxon 评 Low/Medium/High/Critical;LLM 推理+NCBI 谱系,在安全护栏内 |
+| 9 | human_review | | HITL 检查点(auto / interactive / **pause 暂停恢复**)|
+| (–) | llm_interpretation | 🧠 | 为报告生成公共卫生监测叙事 |
+| 10 | report_writer_agent | | 生成 Markdown + HTML 监测报告 |
+| 11 | final_summary | | 终末摘要、报告路径、落盘 `state.json` |
+| 12 | error_handler | | 错误分类、判定能否继续、防止静默失败 |
+
+### 6.3 LLM agent("大脑")
+**6 个节点是真正的 LLM agent**(Anthropic Claude,`claude-opus-4-8`):qc、taxonomy、
+abundance、novel_virus、risk、llm_interpretation。其余节点是基础设施/IO/控制类,**有意保持确定性**——它们不需要"大脑"。
+
+**四条设计原则(每个 LLM agent 都满足):**
+1. **可选 + 无 key 降级**:默认关闭(`llm.enabled: false`);无 key/SDK/API 失败 → 干净退回确定性。Phase 1–3 永不需要 key。
+2. **有据可查,不止凭记忆**:判断建立在 (a) 用 taxid 实时查的 **NCBI 真实谱系**(`ncbi.enabled`,本地控制端;Division `Phages` = 权威噬菌体);(b) 手写**文献参考**(`llm/reference.py`,同时作缓存前缀);(c) 逐病原片段。
+3. **确定性安全护栏**:LLM 只能"加谨慎"不能"减"——噬菌体/假阳性钉 Low、已知高危病原体托底 High(`_clamp_llm_risk`);taxonomy 标记取并集(只加不减);PMMoV/crAssphage 当**归一化对照**而非威胁。
+4. **成本优化**:共享文献参考作缓存的系统提示前缀(>1024 token → 同一运行内跨 agent 真正命中缓存)。
+
+每次判断叠加的知识层:**NCBI(权威)+ 文献参考 + Claude 训练知识 → 在确定性安全护栏内**。
+
+### 6.4 人在回路审核(`human_review.mode`)
+审核检查点能真正让人类参与。触发条件:总体风险 High/Critical、有新型候选、或样本 QC 失败。三种模式:
+- **auto**(默认):模拟批准——不阻塞,适合自动化/CI。
+- **interactive**:真实终端 y/N 提示(前台运行)。
+- **pause**:运行到检查点**暂停退出**,存盘可恢复快照(`paused_state.json`)+ `review_request.json`。之后真人跑
+  `metamavs review --run-dir <目录>` 查看风险上下文、批准/驳回(`--approve`/`--reject` 或交互)。批准→恢复 解读→报告→收尾;驳回→收尾不出报告。**与运行解耦**,适合**后台/长 HPC 作业 + 延迟人审**——决定和审核备注写进报告。
+
+### 6.5 路由逻辑(`routing.py`)
 - `make_step_router(next)`:主干每个节点后挂的"错误守卫"——有致命错误转 `error_handler`,否则去下一节点。
-- `review_router`:risk 之后分流——需审核去 `human_review`,否则直达 `report_writer`。
+- `mode_router`:viral_detection 之后——`execution.mode == hpc` 则走远程(HPC)链,否则直达 taxonomy。
+- `review_router`:risk 之后分流——需审核去 `human_review`,否则去 `llm_interpretation` → 报告。
+- `review_pause_router`:`human_review` 之后——若暂停等人审则到 END(之后用 `metamavs review` 恢复),否则继续解读。
 - `error_handler_router`:`error_handler` 之后——可继续去 `report_writer`,否则去 `final_summary`。
 - `should_request_review`:判定是否触发人审(高/危风险、新型候选、QC 失败)。
 
@@ -284,11 +309,19 @@ reports/<run_name>/
 ```bash
 pip install -e ".[dev]"
 metamavs graph    --config configs/example_config.yaml   # 看工作流结构
-metamavs validate --config configs/example_config.yaml   # 只校验
+metamavs validate --config configs/example_config.yaml   # 校验配置+清单
+metamavs tools    --config configs/example_config.yaml   # 检查工具可用性
 metamavs run      --config configs/example_config.yaml --dry-run  # 跑全流程
+# HPC(Phase 3):真实运行 + 人在回路审核
+metamavs remote-check --config configs/sapelo2_config.yaml        # 诊断 SSH/SLURM
+metamavs run          --config configs/sapelo2_config.yaml --execute  # 可能在人审点暂停
+metamavs review --run-dir reports/<run_name> --approve --notes "…"   # 真人拍板
 pytest                                                    # 跑测试
 ```
 (未安装时用 `python -m metamavs.cli ...` 代替 `metamavs`。)
+
+**可选 LLM + NCBI grounding**:把 `ANTHROPIC_API_KEY` 放进 `.env`,config 里设
+`llm.enabled: true`、(可选)`ncbi.enabled: true`。不设这些就纯确定性、无需 key 运行。
 
 ---
 
