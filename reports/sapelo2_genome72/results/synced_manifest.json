@@ -1,14 +1,14 @@
 {
-  "run_id": "run_20260605_005651",
+  "run_id": "run_20260608_001937",
   "downloaded": [
     {
-      "remote_path": "/scratch/sp96859/Meta-genome-data-analysis/Apptainer/Meta_MAVS/metamavs/run_20260605_005651/results/viral_detection/Genome_72.gottcha2.tsv",
+      "remote_path": "/scratch/sp96859/Meta-genome-data-analysis/Apptainer/Meta_MAVS/metamavs/run_20260608_001937/results/viral_detection/Genome_72.gottcha2.tsv",
       "local_path": "reports/sapelo2_genome72/results/raw/gottcha2/Genome_72.gottcha2.tsv",
       "size": 70010,
       "ok": true
     },
     {
-      "remote_path": "/scratch/sp96859/Meta-genome-data-analysis/Apptainer/Meta_MAVS/metamavs/run_20260605_005651/results/viral_detection/Genome_72.gottcha2.lineage.tsv",
+      "remote_path": "/scratch/sp96859/Meta-genome-data-analysis/Apptainer/Meta_MAVS/metamavs/run_20260608_001937/results/viral_detection/Genome_72.gottcha2.lineage.tsv",
       "local_path": "reports/sapelo2_genome72/results/raw/gottcha2/Genome_72.gottcha2.lineage.tsv",
       "size": 12235,
       "ok": true

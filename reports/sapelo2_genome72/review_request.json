@@ -1,5 +1,5 @@
 {
-  "run_id": "run_20260605_005651",
+  "run_id": "run_20260608_001937",
   "triggers": [
     "overall risk = High"
   ],
@@ -11,35 +11,35 @@
         "risk_level": "High",
         "total_reads": 52,
         "trend": "stable",
-        "reasons": "[LLM] Matches configured high-risk list with adequate support (52 reads, not FP). Trend is stable (not sharply increasing) so High, not Critical. Recommend confirmatory RT-qPCR/amplicon sequencing before action."
+        "reasons": "matches high-risk pathogen: SARS-CoV-2"
       },
       {
         "taxon_name": "Norwalk virus",
         "risk_level": "High",
         "total_reads": 26,
         "trend": "stable",
-        "reasons": "[LLM] Norovirus matches the configured high-risk list with adequate support (26 reads, not FP). Stable trend so High, not Critical. Recommend orthogonal RT-qPCR confirmation."
+        "reasons": "matches high-risk pathogen: Norovirus; low read count \u2014 recommend confirmatory testing"
+      },
+      {
+        "taxon_name": "Obolenskvirus AP22",
+        "risk_level": "Low",
+        "total_reads": 181,
+        "trend": "stable",
+        "reasons": "environmental_phage (not a human/animal pathogen)"
+      },
+      {
+        "taxon_name": "Phikzvirus phiKZ",
+        "risk_level": "Low",
+        "total_reads": 155,
+        "trend": "stable",
+        "reasons": "environmental_phage (not a human/animal pathogen)"
       },
       {
         "taxon_name": "Human mastadenovirus F",
-        "risk_level": "Medium",
+        "risk_level": "Low",
         "total_reads": 116,
         "trend": "stable",
-        "reasons": "[LLM] Non-phage, non-high-risk-list virus with substantial support (116 reads, no FP flag). Enteric adenovirus is commonly shed in stool; flagged Medium but not a configured high-risk target."
-      },
-      {
-        "taxon_name": "Betacoronavirus 1",
-        "risk_level": "Medium",
-        "total_reads": 26,
-        "trend": "stable",
-        "reasons": "[LLM] Non-phage, not on high-risk list; substantial support (26 reads). Common seasonal human coronavirus \u2014 Medium."
-      },
-      {
-        "taxon_name": "Human coronavirus 229E",
-        "risk_level": "Medium",
-        "total_reads": 20,
-        "trend": "stable",
-        "reasons": "[LLM] Non-phage, not on high-risk list; substantial support (20 reads). Common seasonal coronavirus \u2014 Medium."
+        "reasons": "low/uncertain signal"
       }
     ],
     "n_novel_candidates": 0,
