@@ -158,8 +158,9 @@ An **optional** LLM interpretation layer (Anthropic Claude), fully additive:
   writes an advisory "AI-Assisted Interpretation" section (Executive Summary,
   Risk Interpretation, Recommended Actions, Caveats). The **deterministic risk
   assessment stays authoritative**.
-- `LLMConfig` (`enabled` off by default, `model`/`effort`/`max_tokens`); `[llm]`
-  extra (`anthropic`, `python-dotenv`); `.env` gitignored.
+- `LLMConfig` (`enabled` off by default, `model`/`effort`/`max_tokens`, plus
+  `overrides` for per-agent model selection); `[llm]` extra (`anthropic`,
+  `python-dotenv`); `.env` gitignored.
 - **Graceful fallback**: no key / `enabled=false` / SDK or API failure → clean
   no-op; Phases 1–3 remain key-free. 6 new tests (90 total).
 - Live-verified with a real key: Claude produced a scientifically-cautious
@@ -326,6 +327,12 @@ don't need a brain.
 
 Knowledge layers stacked per judgement: **NCBI (authoritative) + literature
 reference + Claude training knowledge → inside deterministic safety rails.**
+
+**Per-agent model selection** — the six agents share `llm.model` / `effort` /
+`max_tokens` by default; under `llm.overrides`, keyed by agent name (qc, taxonomy,
+abundance, novel_virus, risk_assessment, llm_interpretation), any field can be
+overridden while unset fields inherit the top-level defaults — e.g. a stronger
+model / higher effort for risk, a cheaper model for qc.
 
 ### 6.4 Human-in-the-loop review (`human_review.mode`)
 The review checkpoint can genuinely involve a human. Triggered when overall risk

@@ -20,8 +20,8 @@ NCBI grounding layered on top.
 > avoid over-claiming from weak metagenomic evidence.
 
 See [`GUIDE_LINE.md`](GUIDE_LINE.md) / [`GUIDE_LINE_EN.md`](GUIDE_LINE_EN.md) for
-the full design, and [`PHASE3_DESIGN.md`](PHASE3_DESIGN.md) for the hybrid-HPC
-architecture.
+the full design, [`PHASE3_DESIGN.md`](PHASE3_DESIGN.md) for the hybrid-HPC
+architecture, and [`fasta_run.md`](fasta_run.md) for a terminal run guide.
 
 ---
 
@@ -74,7 +74,7 @@ metamavs graph    --config configs/example_config.yaml   # describe the workflow
 metamavs validate --config configs/example_config.yaml   # validate config + manifest
 metamavs tools    --config configs/example_config.yaml   # check tool availability
 metamavs run      --config configs/example_config.yaml --dry-run   # full dry run
-pytest                                                   # 119 tests
+pytest                                                   # 125 tests
 ```
 
 (Not installed? Prefix with `python -m metamavs.cli`.)
@@ -134,6 +134,22 @@ echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env       # .env is gitignored
 # in your config
 llm:  { enabled: true, model: claude-opus-4-8, effort: medium }
 ncbi: { enabled: true, email: you@example.com }   # verified NCBI lineage grounding
+```
+
+**Per-agent model overrides (optional).** All six agents share `llm.model` /
+`effort` / `max_tokens` by default. To run, say, risk assessment on a stronger
+model and QC on a cheaper one, add an `llm.overrides` map keyed by agent
+(`qc`, `taxonomy`, `abundance`, `novel_virus`, `risk_assessment`,
+`llm_interpretation`); unset fields inherit the top-level defaults:
+
+```yaml
+llm:
+  enabled: true
+  model: claude-opus-4-8       # default for all agents
+  effort: medium
+  overrides:
+    risk_assessment: { model: claude-opus-4-8, effort: high }
+    qc:              { model: claude-haiku-4-5, effort: low }
 ```
 
 ---
