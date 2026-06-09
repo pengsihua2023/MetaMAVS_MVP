@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..llm import generate, llm_available
+from ..llm import generate, llm_available, resolve_params
 from ..llm.prompts import SYSTEM_PROMPT, build_user_prompt
 from ..llm.reference import SHARED_REFERENCE
 from ..state import MetaMAVSState
@@ -38,14 +38,13 @@ def llm_interpretation_agent_node(state: MetaMAVSState) -> dict[str, Any]:
         return {"llm_narrative": {"enabled": True, "status": "no_key"},
                 "warnings": [warn], "execution_log": ["llm_interpretation: no key"]}
 
+    params = resolve_params(llm_cfg, "llm_interpretation")
     logger.info("Generating LLM surveillance narrative")
     narrative = generate(
         SYSTEM_PROMPT,
         build_user_prompt(state),
         cached_prefix=SHARED_REFERENCE,
-        model=llm_cfg.get("model", "claude-opus-4-8"),
-        effort=llm_cfg.get("effort", "medium"),
-        max_tokens=int(llm_cfg.get("max_tokens", 4000)),
+        **params,
     )
 
     if not narrative:
@@ -59,7 +58,7 @@ def llm_interpretation_agent_node(state: MetaMAVSState) -> dict[str, Any]:
     logger.info("LLM narrative written: %s", md_path)
     return {
         "llm_narrative": {"enabled": True, "status": "ok",
-                          "model": llm_cfg.get("model", "claude-opus-4-8"),
+                          "model": params["model"],
                           "text": narrative, "path": str(md_path)},
         "execution_log": ["llm_interpretation: narrative generated"],
     }

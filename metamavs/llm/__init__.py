@@ -6,6 +6,6 @@ deterministic Phase 1-3 pipeline is unchanged. No LLM key is ever required to
 run MetaMAVS.
 """
 
-from .client import generate, generate_json, llm_available
+from .client import generate, generate_json, llm_available, resolve_params
 
-__all__ = ["generate", "generate_json", "llm_available"]
+__all__ = ["generate", "generate_json", "llm_available", "resolve_params"]

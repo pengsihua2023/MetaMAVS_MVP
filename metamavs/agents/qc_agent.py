@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..llm import generate, llm_available
+from ..llm import generate, llm_available, resolve_params
 from ..llm.prompts import QC_SYSTEM, build_qc_user
 from ..llm.reference import SHARED_REFERENCE
 from ..state import MetaMAVSState
@@ -26,8 +26,7 @@ def _llm_qc(state: MetaMAVSState, qc_summary: dict) -> str | None:
     if "synthetic" in str(qc_summary.get("note", "")).lower():
         return None
     return generate(QC_SYSTEM, build_qc_user(qc_summary), cached_prefix=SHARED_REFERENCE,
-                    model=llm_cfg.get("model", "claude-opus-4-8"),
-                    effort=llm_cfg.get("effort", "medium"), max_tokens=int(llm_cfg.get("max_tokens", 4000)))
+                    **resolve_params(llm_cfg, "qc"))
 
 logger = get_logger("agents.qc")
 

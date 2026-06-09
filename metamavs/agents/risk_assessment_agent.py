@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..llm import generate_json, llm_available
+from ..llm import generate_json, llm_available, resolve_params
 from ..llm.prompts import RISK_SYSTEM, build_risk_user
 from ..llm.reference import SHARED_REFERENCE
 from ..pathogens import match_high_risk
@@ -49,8 +49,7 @@ def _llm_risk(state: MetaMAVSState, evidence: list[dict]) -> dict[str, dict]:
         return {}
     data = generate_json(
         RISK_SYSTEM, build_risk_user(evidence), cached_prefix=SHARED_REFERENCE,
-        model=llm_cfg.get("model", "claude-opus-4-8"),
-        effort=llm_cfg.get("effort", "medium"), max_tokens=int(llm_cfg.get("max_tokens", 4000)),
+        **resolve_params(llm_cfg, "risk_assessment"),
     )
     if not data or "assessments" not in data:
         return {}

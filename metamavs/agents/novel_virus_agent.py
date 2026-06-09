@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..llm import generate_json, llm_available
+from ..llm import generate_json, llm_available, resolve_params
 from ..llm.prompts import NOVEL_SYSTEM, build_novel_user
 from ..llm.reference import SHARED_REFERENCE
 from ..state import MetaMAVSState
@@ -139,8 +139,7 @@ def novel_virus_screening_agent_node(state: MetaMAVSState) -> dict[str, Any]:
     if candidates and llm_cfg.get("enabled", False) and llm_available():
         data = generate_json(
             NOVEL_SYSTEM, build_novel_user(candidates), cached_prefix=SHARED_REFERENCE,
-            model=llm_cfg.get("model", "claude-opus-4-8"),
-            effort=llm_cfg.get("effort", "medium"), max_tokens=int(llm_cfg.get("max_tokens", 4000)),
+            **resolve_params(llm_cfg, "novel_virus"),
         )
         if data:
             llm_assessment = data

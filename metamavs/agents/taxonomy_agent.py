@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 
 from ..controls import match_control
-from ..llm import generate_json, llm_available
+from ..llm import generate_json, llm_available, resolve_params
 from ..llm.prompts import TAXONOMY_SYSTEM, build_taxonomy_user
 from ..llm.reference import SHARED_REFERENCE
 from ..state import MetaMAVSState
@@ -42,8 +42,7 @@ def _llm_taxonomy(state: MetaMAVSState, candidates: list[dict], lineages: dict[i
         return {}
     data = generate_json(
         TAXONOMY_SYSTEM, build_taxonomy_user(candidates, lineages), cached_prefix=SHARED_REFERENCE,
-        model=llm_cfg.get("model", "claude-opus-4-8"),
-        effort=llm_cfg.get("effort", "medium"), max_tokens=int(llm_cfg.get("max_tokens", 4000)),
+        **resolve_params(llm_cfg, "taxonomy"),
     )
     if not data or "taxa" not in data:
         return {}

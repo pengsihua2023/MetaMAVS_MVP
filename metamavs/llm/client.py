@@ -33,6 +33,24 @@ def _load_env() -> None:
         pass  # dotenv optional; env var may already be set
 
 
+def resolve_params(llm_cfg: dict | None, agent: str) -> dict:
+    """Resolve ``{model, effort, max_tokens}`` for ``agent`` from an llm config dict.
+
+    Applies any per-agent override in ``llm_cfg['overrides'][agent]`` over the
+    top-level ``llm.*`` values; falls back to library defaults if absent. ``agent``
+    is one of: qc, taxonomy, abundance, novel_virus, risk_assessment,
+    llm_interpretation.
+    """
+
+    llm_cfg = llm_cfg or {}
+    override = (llm_cfg.get("overrides") or {}).get(agent) or {}
+    return {
+        "model": override.get("model") or llm_cfg.get("model") or DEFAULT_MODEL,
+        "effort": override.get("effort") or llm_cfg.get("effort") or "medium",
+        "max_tokens": int(override.get("max_tokens") or llm_cfg.get("max_tokens") or 4000),
+    }
+
+
 def llm_available() -> bool:
     """True if an Anthropic key and the SDK are both present."""
 

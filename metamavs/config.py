@@ -152,6 +152,19 @@ class NcbiConfig(BaseModel):
     timeout_s: int = Field(default=15, ge=1)
 
 
+class LLMAgentOverride(BaseModel):
+    """Per-agent override of the top-level ``llm.*`` defaults.
+
+    Every field is optional; unset fields fall back to the top-level ``llm``
+    value. Lets you, e.g., run ``risk_assessment`` on a stronger model while
+    keeping ``qc`` on a cheaper one.
+    """
+
+    model: str | None = None
+    effort: Literal["low", "medium", "high", "max"] | None = None
+    max_tokens: int | None = Field(default=None, ge=256)
+
+
 class LLMConfig(BaseModel):
     """Phase 4: optional LLM interpretation (Anthropic Claude). Off by default."""
 
@@ -159,6 +172,9 @@ class LLMConfig(BaseModel):
     model: str = "claude-opus-4-8"
     effort: Literal["low", "medium", "high", "max"] = "medium"
     max_tokens: int = Field(default=4000, ge=256)
+    # Optional per-agent overrides, keyed by agent name: qc, taxonomy, abundance,
+    # novel_virus, risk_assessment, llm_interpretation.
+    overrides: dict[str, LLMAgentOverride] = Field(default_factory=dict)
 
 
 class HumanReviewConfig(BaseModel):
