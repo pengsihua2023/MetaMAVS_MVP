@@ -19,7 +19,7 @@ NCBI grounding layered on top.
 > testing. Every layer (deterministic rules, LLM agents, reports) is designed to
 > avoid over-claiming from weak metagenomic evidence.
 
-See [`GUIDE_LINE.md`](GUIDE_LINE.md) / [`GUIDE_LINE_EN.md`](GUIDE_LINE_EN.md) for
+See [`GUIDE_LINE_EN.md`](GUIDE_LINE_EN.md) for
 the full design, and [`PHASE3_DESIGN.md`](PHASE3_DESIGN.md) for the hybrid-HPC
 architecture.
 
